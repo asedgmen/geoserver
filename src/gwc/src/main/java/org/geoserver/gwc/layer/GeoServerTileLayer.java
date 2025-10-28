@@ -1348,12 +1348,14 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
         }
         Map<String, org.geowebcache.config.legends.LegendInfo> legends = new HashMap<>();
         LayerInfo layerInfo = (LayerInfo) publishedInfo;
+
         Set<StyleInfo> styles = new HashSet<>(layerInfo.getStyles());
         styles.add(layerInfo.getDefaultStyle());
         for (StyleInfo styleInfo : styles) {
             if (styleInfo == null) {
                 continue;
             }
+            
             // compute min and max scales denominators of the style
             NumberRange<Double> scalesDenominator;
             try {
@@ -1415,9 +1417,18 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                     } else {
                         workspaceName = "";
                     }
+                    
+                    URL prelimLegendURL;
+                    try {
+                    	prelimLegendURL = new URL(baseUrlString+"styles" + workspaceName + "/" + legendInfo.getOnlineResource());
+                    } catch (MalformedURLException exception) {
+                        throw new RuntimeException(
+                                String.format("Error parsing preliminary legend URL."), exception);
+                    }
+                    
                     legendURL = buildURL(
-                            baseUrlString + "styles" + workspaceName,
-                            legendInfo.getOnlineResource(),
+                    		prelimLegendURL.getProtocol()+"://"+prelimLegendURL.getHost()+":"+prelimLegendURL.getPort(),
+                    		prelimLegendURL.getPath(),
                             null,
                             URLMangler.URLType.SERVICE);
                 }
