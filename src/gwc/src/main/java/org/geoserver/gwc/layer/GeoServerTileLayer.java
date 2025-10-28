@@ -1411,7 +1411,7 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                                 throw new RuntimeException(
                                         String.format("Error constructing base URL with revised path."), exception);
                             }
-                            baseUrlString = updatedUrl.toString();
+                            baseUrlString = updatedUrl.toString().replace(":-1", "");
                         }
 
                     } else {
@@ -1427,7 +1427,7 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                     }
                     
                     legendURL = buildURL(
-                    		prelimLegendURL.getProtocol()+"://"+prelimLegendURL.getHost()+":"+prelimLegendURL.getPort(),
+                    		(prelimLegendURL.getProtocol()+"://"+prelimLegendURL.getHost()+":"+prelimLegendURL.getPort()).replace(":-1", ""),
                     		prelimLegendURL.getPath(),
                             null,
                             URLMangler.URLType.SERVICE);
