@@ -1787,6 +1787,13 @@
           <artifactId>markdown-page-generator-plugin</artifactId>
           <version>2.4.0</version>
         </plugin>
+
+        <plugin>
+          <artifactId>maven-help-plugin</artifactId>
+          <version>3.5.1</version>
+          <!-- Use a valid, recent version -->
+        </plugin>
+
       </plugins>
     </pluginManagement>
 
