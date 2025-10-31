@@ -1373,64 +1373,60 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
 
                 // Determine if the custom legend is sourced from a URL or a file stored locally in the application
                 boolean onlineResourceIsURI;
+                String onlineResource = legendInfo.getOnlineResource();
                 try {
-                    new URL(legendInfo.getOnlineResource()).toURI(); // Checks both URL and URI syntax
+                    new URL(onlineResource).toURI(); // Checks both URL and URI syntax
                     onlineResourceIsURI = true;
                 } catch (MalformedURLException | URISyntaxException e) {
                     onlineResourceIsURI = false;
                 }
 
+                String baseUrlString = baseUrl();                    
                 String legendURL;
                 if (onlineResourceIsURI) {
                     legendURL = legendInfo.getOnlineResource();
                 } else {
-                    String baseUrlString = baseUrl();
-                    String workspaceName;
-                    if (styleInfo.getWorkspace() != null) {
-                        workspaceName = "/" + styleInfo.getWorkspace().getName();
-
-                        // Check if base URL already includes the workspace name
-                        URL baseUrl;
-                        try {
-                            baseUrl = new URL(baseUrlString);
-                        } catch (MalformedURLException exception) {
-                            throw new RuntimeException(
-                                    String.format("Error parsing base URL '%s'.", baseUrlString), exception);
-                        }
-
-                        String baseUrlPath = baseUrl.getPath();
-
-                        if (baseUrlPath.contains(workspaceName)) {
-                            // Remove the workspace name from the path
-                            String newPath = baseUrlPath.replace(workspaceName, "");
-                            URL updatedUrl;
-                            try {
-                                updatedUrl =
-                                        new URL(baseUrl.getProtocol(), baseUrl.getHost(), baseUrl.getPort(), newPath);
-                            } catch (MalformedURLException exception) {
-                                throw new RuntimeException(
-                                        String.format("Error constructing base URL with revised path."), exception);
-                            }
-                            baseUrlString = updatedUrl.toString().replace(":-1", "");
-                        }
-
-                    } else {
-                        workspaceName = "";
-                    }
-                    
-                    URL prelimLegendURL;
-                    try {
-                    	prelimLegendURL = new URL(baseUrlString+"styles" + workspaceName + "/" + legendInfo.getOnlineResource());
-                    } catch (MalformedURLException exception) {
-                        throw new RuntimeException(
-                                String.format("Error parsing preliminary legend URL."), exception);
-                    }
-                    
+                    baseUrlString = baseUrl();                    
                     legendURL = buildURL(
-                    		(prelimLegendURL.getProtocol()+"://"+prelimLegendURL.getHost()+":"+prelimLegendURL.getPort()).replace(":-1", ""),
-                    		prelimLegendURL.getPath(),
+                    		baseUrlString,
+                    		onlineResource,
                             null,
                             URLMangler.URLType.SERVICE);
+                    
+                    // Re-establish base URL as it may be different in the generated legendURL due to the manglers
+                    baseUrlString = legendURL.substring(0, legendURL.length() - onlineResource.length());
+                
+                    StringBuffer legendURLBuffer = new StringBuffer (legendURL);
+                    int index = 0;
+
+                    // If style is in a workspace, legend URL must include the workspace name. Styles path segment must be immediately before the workspace
+	                if (styleInfo.getWorkspace() != null) {
+	                	
+	                	String workspaceName = styleInfo.getWorkspace().getName();
+	                	
+	                	// Get the legendURL path
+	                	String legendURLPath;
+                        try {
+                        	legendURLPath = new URL(legendURL).getPath();
+                        } catch (MalformedURLException exception) {
+                            throw new RuntimeException(
+                                    String.format("Error parsing legend URL '%s'.", legendURL), exception);
+                        }
+                        
+                        // Ensure legend URL path contains the workspace name
+                        if (legendURLPath.contains("/" + workspaceName + "/")) {
+                        	index = legendURL.indexOf("/" + workspaceName + "/")+1;
+                        } else {
+                        	index = legendURL.indexOf(baseUrlString) + baseUrlString.length();
+                        	legendURLBuffer.insert(index, workspaceName+"/");
+                        }
+	                } else {
+	                	index = legendURL.indexOf(baseUrlString) + baseUrlString.length();
+	                }
+	                
+	                // Insert the styles path segment
+                    legendURLBuffer.insert(index, "styles/");
+	                legendURL = legendURLBuffer.toString();	                
                 }
 
                 gwcLegendInfo
