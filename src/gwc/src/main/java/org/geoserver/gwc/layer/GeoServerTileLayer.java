@@ -1381,12 +1381,11 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                     onlineResourceIsURI = false;
                 }
 
-                String baseUrlString = baseUrl();                    
                 String legendURL;
                 if (onlineResourceIsURI) {
                     legendURL = legendInfo.getOnlineResource();
                 } else {
-                    baseUrlString = baseUrl();                    
+                	String baseUrlString = baseUrl();                    
                     legendURL = buildURL(
                     		baseUrlString,
                     		onlineResource,
