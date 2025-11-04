@@ -36,6 +36,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.ServletContext;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.KeywordInfo;
@@ -1385,47 +1386,30 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                 if (onlineResourceIsURI) {
                     legendURL = legendInfo.getOnlineResource();
                 } else {
-                	String baseUrlString = baseUrl();                    
-                    legendURL = buildURL(
+                	
+                	// Set the base URL to the application context
+                	HttpServletRequest request = Dispatcher.REQUEST.get().getHttpRequest();                	
+                	ServletContext servletContext = request.getServletContext();
+                	String baseUrlString = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + servletContext.getContextPath();
+                	
+                    // Generate the legend URL
+                	legendURL = buildURL(
                     		baseUrlString,
                     		onlineResource,
                             null,
                             URLMangler.URLType.SERVICE);
-                    
-                    // Re-establish base URL as it may be different in the generated legendURL due to the manglers
-                    baseUrlString = legendURL.substring(0, legendURL.length() - onlineResource.length());
-                
-                    StringBuffer legendURLBuffer = new StringBuffer (legendURL);
-                    int index = 0;
 
-                    // If style is in a workspace, legend URL must include the workspace name. Styles path segment must be immediately before the workspace
-	                if (styleInfo.getWorkspace() != null) {
-	                	
-	                	String workspaceName = styleInfo.getWorkspace().getName();
-	                	
-	                	// Get the legendURL path
-	                	String legendURLPath;
-                        try {
-                        	legendURLPath = new URL(legendURL).getPath();
-                        } catch (MalformedURLException exception) {
-                            throw new RuntimeException(
-                                    String.format("Error parsing legend URL '%s'.", legendURL), exception);
-                        }
-                        
-                        // Ensure legend URL path contains the workspace name
-                        if (legendURLPath.contains("/" + workspaceName + "/")) {
-                        	index = legendURL.indexOf("/" + workspaceName + "/")+1;
-                        } else {
-                        	index = legendURL.indexOf(baseUrlString) + baseUrlString.length();
-                        	legendURLBuffer.insert(index, workspaceName+"/");
-                        }
-	                } else {
-	                	index = legendURL.indexOf(baseUrlString) + baseUrlString.length();
-	                }
-	                
-	                // Insert the styles path segment
-                    legendURLBuffer.insert(index, "styles/");
-	                legendURL = legendURLBuffer.toString();	                
+                    // Re-establish base URL as it may have been mangled
+                    baseUrlString = legendURL.substring(0, legendURL.length() - onlineResource.length());
+                    
+                	// Add "styles" to the path, and add the workspace name if the style is in a workspace.
+                    if (styleInfo.getWorkspace() != null) {
+                		onlineResource = "styles/" + styleInfo.getWorkspace().getName() + "/" + onlineResource;
+                    } else {
+                		onlineResource = "styles/" + onlineResource;
+                	}
+                	
+                	legendURL = baseUrlString + onlineResource;
                 }
 
                 gwcLegendInfo
