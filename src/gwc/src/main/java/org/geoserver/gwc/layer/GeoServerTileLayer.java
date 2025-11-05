@@ -1379,7 +1379,7 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                     new URL(onlineResource).toURI(); // Checks both URL and URI syntax
                     onlineResourceIsURI = true;
                 } catch (MalformedURLException | URISyntaxException e) {
-                    onlineResourceIsURI = false;
+                    onlineResourceIsURI = false; // Assumed to be the custom legend's image file name
                 }
 
                 String legendURL;
@@ -1387,29 +1387,25 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                     legendURL = legendInfo.getOnlineResource();
                 } else {
                 	
-                	// Set the base URL to the application context
+                	// Get the base URL to the application context
                 	HttpServletRequest request = Dispatcher.REQUEST.get().getHttpRequest();                	
                 	ServletContext servletContext = request.getServletContext();
-                	String baseUrlString = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + servletContext.getContextPath();
+                	String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + servletContext.getContextPath();
                 	
+                	// Build the URL path
+                	String path = "";
+                    if (styleInfo.getWorkspace() != null) {
+                		path = "styles/" + styleInfo.getWorkspace().getName() + "/" + onlineResource; // Include workspace name in the path when the style is in a workspace
+                    } else {
+                		path = "styles/" + onlineResource;
+                	}
+
                     // Generate the legend URL
                 	legendURL = buildURL(
-                    		baseUrlString,
-                    		onlineResource,
+                    		baseUrl,
+                    		path,
                             null,
                             URLMangler.URLType.SERVICE);
-
-                    // Re-establish base URL as it may have been mangled
-                    baseUrlString = legendURL.substring(0, legendURL.length() - onlineResource.length());
-                    
-                	// Add "styles" to the path, and add the workspace name if the style is in a workspace.
-                    if (styleInfo.getWorkspace() != null) {
-                		onlineResource = "styles/" + styleInfo.getWorkspace().getName() + "/" + onlineResource;
-                    } else {
-                		onlineResource = "styles/" + onlineResource;
-                	}
-                	
-                	legendURL = baseUrlString + onlineResource;
                 }
 
                 gwcLegendInfo
@@ -1447,14 +1443,16 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                 Map<String, String> params = params(
                         "service",
                         "WMS",
+                        "version",
+                        "1.3.0",
                         "request",
                         "GetLegendGraphic",
                         "format",
                         finalFormat,
                         "width",
-                        String.valueOf(finalWidth),
+                        String.valueOf(GetLegendGraphicRequest.DEFAULT_WIDTH), // Must be the default width, cannot be width of actual legend image
                         "height",
-                        String.valueOf(finalHeight),
+                        String.valueOf(GetLegendGraphicRequest.DEFAULT_HEIGHT), // Must be the default height, cannot be height of actual legend image
                         "layer",
                         layerName);
                 if (!styleInfo.getName().equals(layerInfo.getDefaultStyle().getName())) {
