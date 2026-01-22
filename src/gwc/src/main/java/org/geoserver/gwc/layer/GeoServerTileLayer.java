@@ -1642,7 +1642,11 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                     legendURL = legendInfo.getOnlineResource();
                 } else {
 
-                    // Get the base URL to the application context
+                    // The base URL should be composed using the context path of the web application, obtained from
+                    // the ServletContext object. The base URL provided by the org.geoserver.ows.util.baseURL utility
+                    // cannot be reliably used as it obtains the context path from the HttpServletRequest object
+                    // which may include path segments in addition to the servlet context path, resulting in a
+                    // malformed custom legend URL.
                     HttpServletRequest request = Dispatcher.REQUEST.get().getHttpRequest();
                     ServletContext servletContext = request.getServletContext();
                     String baseUrl = request.getScheme() + "://" + request.getServerName() + ":"
@@ -1702,15 +1706,9 @@ public class GeoServerTileLayer extends TileLayer implements ProxyLayer, TileJSO
                         "format",
                         finalFormat,
                         "width",
-                        String.valueOf(
-                                GetLegendGraphicRequest
-                                        .DEFAULT_WIDTH), // Must be the default width, cannot be width of actual legend
-                        // image
+                        String.valueOf(finalWidth),
                         "height",
-                        String.valueOf(
-                                GetLegendGraphicRequest
-                                        .DEFAULT_HEIGHT), // Must be the default height, cannot be height of actual
-                        // legend image
+                        String.valueOf(finalHeight),
                         "layer",
                         layerName);
                 if (!styleInfo.getName().equals(layerInfo.getDefaultStyle().getName())) {

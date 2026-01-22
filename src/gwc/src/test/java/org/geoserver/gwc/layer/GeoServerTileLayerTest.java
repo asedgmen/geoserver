@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.imagen.RenderedOp;
@@ -1377,7 +1378,7 @@ public class GeoServerTileLayerTest {
         assertThat(legendsInfo.get("alternateStyle-2").getFormat(), is("image/png"));
         assertThat(
                 legendsInfo.get("alternateStyle-2").getLegendUrl().trim(),
-                is("http://localhost:8080/geoserver/some-url"));
+                is("http://localhost:8080/geoserver/styles/some-url"));
     }
 
     @Test
@@ -1445,6 +1446,9 @@ public class GeoServerTileLayerTest {
         when(httpRequest.getServerName()).thenReturn("localhost");
         when(httpRequest.getServerPort()).thenReturn(8080);
         when(httpRequest.getContextPath()).thenReturn("/geoserver");
+        ServletContext servletContext = mock(ServletContext.class);
+        when(httpRequest.getServletContext()).thenReturn(servletContext);
+        when(servletContext.getContextPath()).thenReturn("/geoserver");
         Dispatcher.REQUEST.set(request);
     }
 
